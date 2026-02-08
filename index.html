@@ -107,7 +107,7 @@ async function searchVideo(){
     .filter(w=>w.length>2);
 
   const yt=`https://www.youtube.com/results?search_query=${encodeURIComponent(song+" "+artist)}`;
-  const proxy=`https://api.allorigins.win/raw?url=${encodeURIComponent("https://r.jina.ai/"+yt)}`;
+  const proxy=`https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent("https://r.jina.ai/"+yt)}`;
   const res=await fetch(proxy);
   const text=await res.text();
 
