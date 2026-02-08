@@ -56,7 +56,7 @@ button{
   max-width:none;
 }
 
-/* VIDEO COVER */
+/* VIDEO COVER (ORIGINAL) */
 .video-cover{
   position:absolute;
   top:50%;
@@ -71,7 +71,15 @@ button{
   height:100%;
 }
 
-/* ===== CONTROLS OVERLAY ===== */
+/* TAP BLOCKER */
+.tap-layer{
+  position:absolute;
+  inset:0;
+  z-index:15;
+  background:transparent;
+}
+
+/* CONTROLS */
 .controls{
   position:absolute;
   left:0;
@@ -79,7 +87,7 @@ button{
   bottom:0;
   padding:10px 14px;
   background:linear-gradient(to top,#000c,transparent);
-  z-index:30;
+  z-index:20;
   transition:opacity .25s;
 }
 
@@ -124,7 +132,7 @@ button{
   touch-action:none;
 }
 
-/* FULLSCREEN BUTTON */
+/* FULLSCREEN */
 .fs-btn{
   width:34px;
   height:34px;
@@ -161,9 +169,13 @@ button{
 
 <div id="outer" class="outer">
 
-  <div class="video-cover" id="videoTap">
+  <!-- VIDEO -->
+  <div class="video-cover">
     <div id="wrap"><div id="player"></div></div>
   </div>
+
+  <!-- TAP BLOCKER -->
+  <div class="tap-layer" id="tapLayer"></div>
 
   <!-- CONTROLS -->
   <div class="controls hide" id="controls">
@@ -189,7 +201,9 @@ button{
 <script>
 let player, dragging=false, looped=false;
 let hideTimer=null;
+
 const controls=document.getElementById("controls");
+const tapLayer=document.getElementById("tapLayer");
 
 /* SHOW / HIDE CONTROLS */
 function showControls(){
@@ -198,9 +212,16 @@ function showControls(){
   hideTimer=setTimeout(()=>controls.classList.add("hide"),1000);
 }
 
-/* TAP VIDEO */
-document.getElementById("videoTap").addEventListener("pointerdown",()=>{
+/* BLOCK VIDEO TAP + DOUBLE TAP */
+tapLayer.addEventListener("pointerdown",e=>{
+  e.preventDefault();
+  e.stopPropagation();
   showControls();
+});
+
+tapLayer.addEventListener("dblclick",e=>{
+  e.preventDefault();
+  e.stopPropagation();
 });
 
 /* SEARCH */
@@ -263,7 +284,7 @@ window.addEventListener("pointerup",()=>{
   showControls();
 });
 
-/* UTILS */
+/* UTIL */
 function format(t){
   t=Math.floor(t);
   return Math.floor(t/60)+":"+(t%60<10?"0":"")+t%60;
