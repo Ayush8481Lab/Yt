@@ -56,7 +56,7 @@ button{
   max-width:none;
 }
 
-/* VIDEO COVER (ORIGINAL) */
+/* VIDEO COVER */
 .video-cover{
   position:absolute;
   top:50%;
@@ -69,6 +69,18 @@ button{
 #wrap,#player,iframe{
   width:100%;
   height:100%;
+}
+
+/* CENTER TAP ZONE */
+.center-tap{
+  position:absolute;
+  top:50%;
+  left:50%;
+  width:120px;
+  height:120px;
+  transform:translate(-50%,-50%);
+  z-index:15;
+  background:transparent;
 }
 
 /* CONTROLS */
@@ -162,9 +174,12 @@ button{
 <div id="outer" class="outer">
 
   <!-- VIDEO -->
-  <div class="video-cover" id="videoTap">
+  <div class="video-cover" id="videoArea">
     <div id="wrap"><div id="player"></div></div>
   </div>
+
+  <!-- CENTER TAP -->
+  <div class="center-tap" id="centerTap"></div>
 
   <!-- CONTROLS -->
   <div class="controls hide" id="controls">
@@ -192,7 +207,8 @@ let player, dragging=false, looped=false;
 let hideTimer=null;
 
 const controls=document.getElementById("controls");
-const videoTap=document.getElementById("videoTap");
+const videoArea=document.getElementById("videoArea");
+const centerTap=document.getElementById("centerTap");
 
 /* SHOW / HIDE CONTROLS */
 function showControls(){
@@ -201,11 +217,17 @@ function showControls(){
   hideTimer=setTimeout(()=>controls.classList.add("hide"),1000);
 }
 
-/* CENTER TAP = PLAY / PAUSE */
-videoTap.addEventListener("click",()=>{
+/* TAP OUTSIDE CENTER = SHOW CONTROLS ONLY */
+videoArea.addEventListener("click",()=>{
+  showControls();
+});
+
+/* TAP CENTER = PLAY / PAUSE */
+centerTap.addEventListener("click",e=>{
+  e.stopPropagation();
   if(!player) return;
-  let state=player.getPlayerState();
-  if(state===YT.PlayerState.PLAYING){
+  let s=player.getPlayerState();
+  if(s===YT.PlayerState.PLAYING){
     player.pauseVideo();
   }else{
     player.playVideo();
@@ -217,44 +239,30 @@ videoTap.addEventListener("click",()=>{
 async function searchVideo(){
   let s=song.value.trim(), a=artist.value.trim();
   if(!s||!a){alert("Enter song & artist");return;}
-
   let yt=`https://www.youtube.com/results?search_query=${encodeURIComponent(s+" "+a)}`;
   let r=await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent("https://r.jina.ai/"+yt)}`);
   let t=await r.text();
   let m=t.match(/watch\?v=([a-zA-Z0-9_-]{11})/);
-
-  if(m) loadPlayer(m[1]);
-  else alert("Video not found");
+  if(m) loadPlayer(m[1]); else alert("Video not found");
 }
 
 /* PLAYER */
 function loadPlayer(id){
   if(player) player.destroy();
   looped=false;
-
   player=new YT.Player("player",{
     videoId:id,
-    playerVars:{
-      autoplay:1,
-      controls:1,
-      playsinline:1,
-      rel:0,
-      modestbranding:1,
-      iv_load_policy:3
-    },
+    playerVars:{autoplay:1,controls:1,playsinline:1,rel:0,modestbranding:1,iv_load_policy:3},
     events:{onReady:startTracker}
   });
 }
 
-/* TRACKER + OLD LOOP */
+/* TRACKER + LOOP */
 function startTracker(){
   setInterval(()=>{
     if(!player||!player.getDuration||dragging) return;
-
-    let c=player.getCurrentTime();
-    let d=player.getDuration();
+    let c=player.getCurrentTime(), d=player.getDuration();
     if(!d) return;
-
     let p=c/d*100;
     fill.style.width=p+"%";
     dot.style.left=p+"%";
