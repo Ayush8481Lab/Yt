@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cover Player</title>
+
+<style>
+body{
+  margin:0;
+  background:#000;
+  font-family:Arial;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+
+/* SEARCH */
+.search-box{
+  width:95%;
+  max-width:420px;
+  margin:15px 0;
+}
+
+input{
+  width:100%;
+  padding:12px;
+  margin:6px 0;
+  border-radius:8px;
+  border:none;
+}
+
+button{
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:8px;
+  background:#ff0000;
+  color:#fff;
+  font-weight:bold;
+}
+
+/* PLAYER */
+.outer{
+  position:relative;
+  width:95%;
+  max-width:420px;
+  aspect-ratio:16/9;
+  background:#000;
+  overflow:hidden;
+  border-radius:14px;
+}
+
+.outer:fullscreen{
+  width:100%;
+  height:100%;
+  max-width:none;
+}
+
+/* VIDEO COVER */
+.video-cover{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  width:100%;
+  height:177.77%;
+}
+
+#wrap,#player,iframe{
+  width:100%;
+  height:100%;
+}
+
+/* ===== CONTROLS OVERLAY ===== */
+.controls{
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:0;
+  padding:10px 14px;
+  background:linear-gradient(to top,#000c,transparent);
+  z-index:30;
+  transition:opacity .25s;
+}
+
+.controls.hide{
+  opacity:0;
+  pointer-events:none;
+}
+
+/* BAR ROW */
+.bar-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.bar{
+  flex:1;
+  position:relative;
+  height:4px;
+  background:#555;
+  border-radius:3px;
+}
+
+.fill{
+  position:absolute;
+  left:0;
+  top:0;
+  height:100%;
+  width:0%;
+  background:#ff0000;
+}
+
+.dot{
+  position:absolute;
+  top:50%;
+  transform:translate(-50%,-50%);
+  width:14px;
+  height:14px;
+  background:#ff0000;
+  border-radius:50%;
+  left:0%;
+  touch-action:none;
+}
+
+/* FULLSCREEN BUTTON */
+.fs-btn{
+  width:34px;
+  height:34px;
+  background:#000a;
+  border:none;
+  border-radius:6px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.fs-btn svg{
+  width:18px;
+  height:18px;
+  fill:#fff;
+}
+
+/* TIME */
+.time{
+  font-size:12px;
+  color:#fff;
+  margin-top:6px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="search-box">
+  <input id="song" placeholder="Song name">
+  <input id="artist" placeholder="Artist">
+  <button onclick="searchVideo()">Search</button>
+</div>
+
+<div id="outer" class="outer">
+
+  <div class="video-cover" id="videoTap">
+    <div id="wrap"><div id="player"></div></div>
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="controls hide" id="controls">
+    <div class="bar-row">
+      <div class="bar" id="bar">
+        <div class="fill" id="fill"></div>
+        <div class="dot" id="dot"></div>
+      </div>
+
+      <button class="fs-btn" onclick="toggleFull()">
+        <svg viewBox="0 0 24 24">
+          <path d="M7 3H3v4h2V5h2V3zm12 0h-4v2h2v2h2V3zM5 15H3v4h4v-2H5v-2zm16 0h-2v2h-2v2h4v-4z"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="time" id="time">0:00 / 0:00</div>
+  </div>
+
+</div>
+
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+let player, dragging=false, looped=false;
+let hideTimer=null;
+const controls=document.getElementById("controls");
+
+/* SHOW / HIDE CONTROLS */
+function showControls(){
+  controls.classList.remove("hide");
+  clearTimeout(hideTimer);
+  hideTimer=setTimeout(()=>controls.classList.add("hide"),1000);
+}
+
+/* TAP VIDEO */
+document.getElementById("videoTap").addEventListener("pointerdown",()=>{
+  showControls();
+});
+
+/* SEARCH */
+async function searchVideo(){
+  let s=song.value.trim(), a=artist.value.trim();
+  if(!s||!a){alert("Enter song & artist");return;}
+  let yt=`https://www.youtube.com/results?search_query=${encodeURIComponent(s+" "+a)}`;
+  let r=await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent("https://r.jina.ai/"+yt)}`);
+  let t=await r.text();
+  let m=t.match(/watch\?v=([a-zA-Z0-9_-]{11})/);
+  if(m) loadPlayer(m[1]); else alert("Video not found");
+}
+
+/* PLAYER */
+function loadPlayer(id){
+  if(player) player.destroy();
+  looped=false;
+  player=new YT.Player("player",{
+    videoId:id,
+    playerVars:{autoplay:1,controls:1,playsinline:1,rel:0,modestbranding:1,iv_load_policy:3},
+    events:{onReady:startTracker}
+  });
+}
+
+/* TRACKER */
+function startTracker(){
+  setInterval(()=>{
+    if(!player||!player.getDuration||dragging) return;
+    let c=player.getCurrentTime(), d=player.getDuration();
+    if(!d) return;
+    let p=c/d*100;
+    fill.style.width=p+"%";
+    dot.style.left=p+"%";
+    time.textContent=format(c)+" / "+format(d);
+    if(d-c<=3 && !looped){
+      looped=true;
+      player.seekTo(0,true);
+      setTimeout(()=>looped=false,1500);
+    }
+  },200);
+}
+
+/* SCRUB */
+function seek(x){
+  let r=bar.getBoundingClientRect();
+  let p=Math.max(0,Math.min(1,(x-r.left)/r.width));
+  player.seekTo(player.getDuration()*p,true);
+}
+
+bar.addEventListener("pointerdown",e=>{
+  dragging=true;
+  showControls();
+  seek(e.clientX);
+});
+bar.addEventListener("pointermove",e=>{
+  if(dragging) seek(e.clientX);
+});
+window.addEventListener("pointerup",()=>{
+  dragging=false;
+  showControls();
+});
+
+/* UTILS */
+function format(t){
+  t=Math.floor(t);
+  return Math.floor(t/60)+":"+(t%60<10?"0":"")+t%60;
+}
+
+/* FULLSCREEN */
+function toggleFull(){
+  let el=document.getElementById("outer");
+  document.fullscreenElement?document.exitFullscreen():el.requestFullscreen();
+}
+</script>
+
+</body>
+</html>
