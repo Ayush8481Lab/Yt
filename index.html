@@ -71,14 +71,6 @@ button{
   height:100%;
 }
 
-/* TAP BLOCKER */
-.tap-layer{
-  position:absolute;
-  inset:0;
-  z-index:15;
-  background:transparent;
-}
-
 /* CONTROLS */
 .controls{
   position:absolute;
@@ -170,12 +162,9 @@ button{
 <div id="outer" class="outer">
 
   <!-- VIDEO -->
-  <div class="video-cover">
+  <div class="video-cover" id="videoTap">
     <div id="wrap"><div id="player"></div></div>
   </div>
-
-  <!-- TAP BLOCKER -->
-  <div class="tap-layer" id="tapLayer"></div>
 
   <!-- CONTROLS -->
   <div class="controls hide" id="controls">
@@ -203,7 +192,7 @@ let player, dragging=false, looped=false;
 let hideTimer=null;
 
 const controls=document.getElementById("controls");
-const tapLayer=document.getElementById("tapLayer");
+const videoTap=document.getElementById("videoTap");
 
 /* SHOW / HIDE CONTROLS */
 function showControls(){
@@ -212,53 +201,69 @@ function showControls(){
   hideTimer=setTimeout(()=>controls.classList.add("hide"),1000);
 }
 
-/* BLOCK VIDEO TAP + DOUBLE TAP */
-tapLayer.addEventListener("pointerdown",e=>{
-  e.preventDefault();
-  e.stopPropagation();
+/* CENTER TAP = PLAY / PAUSE */
+videoTap.addEventListener("click",()=>{
+  if(!player) return;
+  let state=player.getPlayerState();
+  if(state===YT.PlayerState.PLAYING){
+    player.pauseVideo();
+  }else{
+    player.playVideo();
+  }
   showControls();
-});
-
-tapLayer.addEventListener("dblclick",e=>{
-  e.preventDefault();
-  e.stopPropagation();
 });
 
 /* SEARCH */
 async function searchVideo(){
   let s=song.value.trim(), a=artist.value.trim();
   if(!s||!a){alert("Enter song & artist");return;}
+
   let yt=`https://www.youtube.com/results?search_query=${encodeURIComponent(s+" "+a)}`;
   let r=await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent("https://r.jina.ai/"+yt)}`);
   let t=await r.text();
   let m=t.match(/watch\?v=([a-zA-Z0-9_-]{11})/);
-  if(m) loadPlayer(m[1]); else alert("Video not found");
+
+  if(m) loadPlayer(m[1]);
+  else alert("Video not found");
 }
 
 /* PLAYER */
 function loadPlayer(id){
   if(player) player.destroy();
   looped=false;
+
   player=new YT.Player("player",{
     videoId:id,
-    playerVars:{autoplay:1,controls:1,playsinline:1,rel:0,modestbranding:1,iv_load_policy:3},
+    playerVars:{
+      autoplay:1,
+      controls:1,
+      playsinline:1,
+      rel:0,
+      modestbranding:1,
+      iv_load_policy:3
+    },
     events:{onReady:startTracker}
   });
 }
 
-/* TRACKER */
+/* TRACKER + OLD LOOP */
 function startTracker(){
   setInterval(()=>{
     if(!player||!player.getDuration||dragging) return;
-    let c=player.getCurrentTime(), d=player.getDuration();
+
+    let c=player.getCurrentTime();
+    let d=player.getDuration();
     if(!d) return;
+
     let p=c/d*100;
     fill.style.width=p+"%";
     dot.style.left=p+"%";
     time.textContent=format(c)+" / "+format(d);
+
     if(d-c<=3 && !looped){
       looped=true;
       player.seekTo(0,true);
+      player.playVideo();
       setTimeout(()=>looped=false,1500);
     }
   },200);
@@ -284,7 +289,7 @@ window.addEventListener("pointerup",()=>{
   showControls();
 });
 
-/* UTIL */
+/* UTILS */
 function format(t){
   t=Math.floor(t);
   return Math.floor(t/60)+":"+(t%60<10?"0":"")+t%60;
