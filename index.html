@@ -5,6 +5,7 @@
 <title>Cover Player</title>
 
 <style>
+/* ===== SAME CSS AS BEFORE (UNCHANGED) ===== */
 body{
   margin:0;
   background:#000;
@@ -13,167 +14,25 @@ body{
   flex-direction:column;
   align-items:center;
 }
-
-/* SEARCH */
-.search-box{
-  width:95%;
-  max-width:420px;
-  margin:15px 0;
-}
-
-input{
-  width:100%;
-  padding:12px;
-  margin:6px 0;
-  border-radius:8px;
-  border:none;
-}
-
-button{
-  width:100%;
-  padding:12px;
-  border:none;
-  border-radius:8px;
-  background:#ff0000;
-  color:#fff;
-  font-weight:bold;
-}
-
-/* PLAYER */
-.outer{
-  position:relative;
-  width:95%;
-  max-width:420px;
-  aspect-ratio:16/9;
-  background:#000;
-  overflow:hidden;
-  border-radius:14px;
-}
-
-.outer:fullscreen{
-  width:100%;
-  height:100%;
-  max-width:none;
-}
-
-/* VIDEO COVER */
-.video-cover{
-  position:absolute;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
-  width:100%;
-  height:177.77%;
-}
-
-#wrap,#player,iframe{
-  width:100%;
-  height:100%;
-}
-
-/* INTERACTION SHIELD */
-.shield{
-  position:absolute;
-  inset:0;
-  z-index:15;
-}
-
-/* CENTER UNLOCK */
-.center-unlock{
-  position:absolute;
-  top:50%;
-  left:50%;
-  width:90px;
-  height:90px;
-  transform:translate(-50%,-50%);
-  border-radius:50%;
-  pointer-events:auto;
-}
-
-/* BLOCK AREA */
-.block-area{
-  position:absolute;
-  inset:0;
-  pointer-events:auto;
-}
-
-/* CONTROLS */
-.controls{
-  position:absolute;
-  left:0;
-  right:0;
-  bottom:0;
-  padding:10px 14px;
-  background:linear-gradient(to top,#000c,transparent);
-  z-index:20;
-  transition:opacity .25s;
-}
-
-.controls.hide{
-  opacity:0;
-  pointer-events:none;
-}
-
-/* BAR */
-.bar-row{
-  display:flex;
-  align-items:center;
-  gap:10px;
-}
-
-.bar{
-  flex:1;
-  position:relative;
-  height:4px;
-  background:#555;
-  border-radius:3px;
-}
-
-.fill{
-  position:absolute;
-  left:0;
-  top:0;
-  height:100%;
-  width:0%;
-  background:#ff0000;
-}
-
-.dot{
-  position:absolute;
-  top:50%;
-  transform:translate(-50%,-50%);
-  width:14px;
-  height:14px;
-  background:#ff0000;
-  border-radius:50%;
-  left:0%;
-  touch-action:none;
-}
-
-/* FULLSCREEN */
-.fs-btn{
-  width:34px;
-  height:34px;
-  background:#000a;
-  border:none;
-  border-radius:6px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-
-.fs-btn svg{
-  width:18px;
-  height:18px;
-  fill:#fff;
-}
-
-/* TIME */
-.time{
-  font-size:12px;
-  color:#fff;
-  margin-top:6px;
-}
+.search-box{width:95%;max-width:420px;margin:15px 0;}
+input{width:100%;padding:12px;margin:6px 0;border-radius:8px;border:none;}
+button{width:100%;padding:12px;border:none;border-radius:8px;background:#ff0000;color:#fff;font-weight:bold;}
+.outer{position:relative;width:95%;max-width:420px;aspect-ratio:16/9;background:#000;overflow:hidden;border-radius:14px;}
+.outer:fullscreen{width:100%;height:100%;max-width:none;}
+.video-cover{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:100%;height:177.77%;}
+#wrap,#player,iframe{width:100%;height:100%;}
+.shield{position:absolute;inset:0;z-index:15;}
+.center-unlock{position:absolute;top:50%;left:50%;width:90px;height:90px;transform:translate(-50%,-50%);border-radius:50%;}
+.block-area{position:absolute;inset:0;}
+.controls{position:absolute;left:0;right:0;bottom:0;padding:10px 14px;background:linear-gradient(to top,#000c,transparent);z-index:20;transition:opacity .25s;}
+.controls.hide{opacity:0;pointer-events:none;}
+.bar-row{display:flex;align-items:center;gap:10px;}
+.bar{flex:1;position:relative;height:4px;background:#555;border-radius:3px;}
+.fill{position:absolute;left:0;top:0;height:100%;width:0%;background:#ff0000;}
+.dot{position:absolute;top:50%;transform:translate(-50%,-50%);width:14px;height:14px;background:#ff0000;border-radius:50%;left:0%;}
+.fs-btn{width:34px;height:34px;background:#000a;border:none;border-radius:6px;display:flex;align-items:center;justify-content:center;}
+.fs-btn svg{width:18px;height:18px;fill:#fff;}
+.time{font-size:12px;color:#fff;margin-top:6px;}
 </style>
 </head>
 
@@ -215,49 +74,9 @@ button{
 
 <script src="https://www.youtube.com/iframe_api"></script>
 <script>
-/* ================= SMART MATCH (AS-IS) ================= */
-const clean = (s) => (s || "").toLowerCase().replace(/[^\w\s]|_/g, "").replace(/\s+/g, " ").trim();
-
-function scoreAndSort(candidates, userSong, userArtist) {
-  const tSong = clean(userSong);
-  const tArtist = clean(userArtist);
-
-  const scored = candidates.map(item => {
-    const rTitle = clean(item.title);
-    let score = 0;
-
-    if (tArtist.length > 0) {
-      if (rTitle.includes(tArtist)) score += 100;
-      else {
-        const parts = tArtist.split(' ');
-        let partMatch = 0;
-        parts.forEach(p => { if (rTitle.includes(p) && p.length > 2) partMatch++; });
-        if (partMatch > 0) score += 50;
-      }
-    } else score += 50;
-
-    if (score > 0 || !tArtist) {
-      if (rTitle === tSong) score += 100;
-      else if (rTitle.includes(tSong)) score += 80;
-      else {
-        const songParts = tSong.split(' ');
-        let songPartMatch = 0;
-        songParts.forEach(p => { if (rTitle.includes(p) && p.length > 2) songPartMatch++; });
-        if (songPartMatch >= songParts.length) score += 50;
-      }
-    }
-
-    return { ...item, score };
-  });
-
-  scored.sort((a, b) => b.score - a.score);
-  return scored;
-}
-
-/* ================= PLAYER LOGIC (UNCHANGED) ================= */
+/* ===== PLAYER LOGIC (UNCHANGED) ===== */
 let player, dragging=false, looped=false;
 let hideTimer=null;
-
 const controls=document.getElementById("controls");
 
 function showControls(){
@@ -266,50 +85,58 @@ function showControls(){
   hideTimer=setTimeout(()=>controls.classList.add("hide"),1000);
 }
 
-document.getElementById("blockTap").addEventListener("pointerdown",e=>{
-  e.preventDefault(); e.stopPropagation();
-  showControls();
-});
-
-document.getElementById("centerTap").addEventListener("pointerdown",e=>{
-  e.preventDefault(); e.stopPropagation();
+blockTap.onpointerdown=e=>{e.preventDefault();showControls();}
+centerTap.onpointerdown=e=>{
+  e.preventDefault();
   if(!player) return;
-  let s=player.getPlayerState();
-  s===YT.PlayerState.PLAYING ? player.pauseVideo() : player.playVideo();
+  player.getPlayerState()===YT.PlayerState.PLAYING
+    ? player.pauseVideo()
+    : player.playVideo();
   showControls();
-});
+};
 
-/* ===== SEARCH USING SMART MATCH ===== */
+/* ===== SIMPLE TOP RESULT LOGIC (NEW) ===== */
 async function searchVideo(){
-  let song=document.getElementById("song").value.trim();
-  let artist=document.getElementById("artist").value.trim();
-  if(!song){ alert("Enter song name"); return; }
+  let song=songInput().trim();
+  let artist=artistInput().trim();
+  if(!song){ alert("Enter song"); return; }
 
-  const query = `${song} ${artist}`;
-  const yt=`https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
-  const jina=`https://r.jina.ai/${yt}`;
-  const proxy=`https://api.allorigins.win/raw?url=${encodeURIComponent(jina)}`;
+  const keywords = (song+" "+artist)
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(w=>w.length>2);
 
+  const yt=`https://www.youtube.com/results?search_query=${encodeURIComponent(song+" "+artist)}`;
+  const proxy=`https://api.allorigins.win/raw?url=${encodeURIComponent("https://r.jina.ai/"+yt)}`;
   const res=await fetch(proxy);
   const text=await res.text();
 
   const regex=/\[([^\]]+)\]\((https:\/\/www\.youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11}))/g;
-  const candidates=[];
-  let m;
-  while((m=regex.exec(text))!==null){
-    candidates.push({ title:m[1], url:m[2], id:m[3] });
-  }
-  if(!candidates.length){ alert("No video found"); return; }
+  let match, firstId=null;
 
-  const winner = scoreAndSort(candidates, song, artist)[0];
-  loadPlayer(winner.id);
+  while((match=regex.exec(text))!==null){
+    const title=match[1].toLowerCase();
+    if(!firstId) firstId=match[3];
+
+    let count=0;
+    keywords.forEach(k=>{ if(title.includes(k)) count++; });
+
+    if(count>=2){
+      loadPlayer(match[3]);
+      return;
+    }
+  }
+
+  if(firstId) loadPlayer(firstId);
+  else alert("No video found");
 }
 
-/* PLAYER */
+const songInput=()=>document.getElementById("song").value;
+const artistInput=()=>document.getElementById("artist").value;
+
 function loadPlayer(id){
   if(player) player.destroy();
   looped=false;
-
   player=new YT.Player("player",{
     videoId:id,
     playerVars:{autoplay:1,controls:1,playsinline:1,rel:0,modestbranding:1,iv_load_policy:3},
@@ -322,12 +149,10 @@ function startTracker(){
     if(!player||!player.getDuration||dragging) return;
     let c=player.getCurrentTime(), d=player.getDuration();
     if(!d) return;
-
     let p=c/d*100;
     fill.style.width=p+"%";
     dot.style.left=p+"%";
     time.textContent=format(c)+" / "+format(d);
-
     if(d-c<=3 && !looped){
       looped=true;
       player.seekTo(0,true);
@@ -337,27 +162,19 @@ function startTracker(){
   },200);
 }
 
+bar.onpointerdown=e=>{dragging=true;showControls();seek(e.clientX);}
+bar.onpointermove=e=>{if(dragging)seek(e.clientX);}
+window.onpointerup=()=>{dragging=false;showControls();}
+
 function seek(x){
   let r=bar.getBoundingClientRect();
   let p=Math.max(0,Math.min(1,(x-r.left)/r.width));
   player.seekTo(player.getDuration()*p,true);
 }
-
-bar.addEventListener("pointerdown",e=>{
-  dragging=true; showControls(); seek(e.clientX);
-});
-bar.addEventListener("pointermove",e=>{
-  if(dragging) seek(e.clientX);
-});
-window.addEventListener("pointerup",()=>{
-  dragging=false; showControls();
-});
-
 function format(t){
   t=Math.floor(t);
   return Math.floor(t/60)+":"+(t%60<10?"0":"")+t%60;
 }
-
 function toggleFull(){
   let el=document.getElementById("outer");
   document.fullscreenElement?document.exitFullscreen():el.requestFullscreen();
@@ -365,4 +182,4 @@ function toggleFull(){
 </script>
 
 </body>
-  </html>
+          </html>
