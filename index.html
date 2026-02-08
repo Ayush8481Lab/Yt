@@ -71,16 +71,30 @@ button{
   height:100%;
 }
 
-/* CENTER TAP ZONE */
-.center-tap{
+/* ===== INTERACTION SHIELD ===== */
+.shield{
+  position:absolute;
+  inset:0;
+  z-index:15;
+}
+
+/* CENTER UNLOCK ZONE */
+.center-unlock{
   position:absolute;
   top:50%;
   left:50%;
-  width:120px;
-  height:120px;
+  width:90px;
+  height:90px;
   transform:translate(-50%,-50%);
-  z-index:15;
-  background:transparent;
+  border-radius:50%;
+  pointer-events:auto;
+}
+
+/* BLOCK EVERYTHING ELSE */
+.block-area{
+  position:absolute;
+  inset:0;
+  pointer-events:auto;
 }
 
 /* CONTROLS */
@@ -100,7 +114,7 @@ button{
   pointer-events:none;
 }
 
-/* BAR ROW */
+/* BAR */
 .bar-row{
   display:flex;
   align-items:center;
@@ -174,12 +188,15 @@ button{
 <div id="outer" class="outer">
 
   <!-- VIDEO -->
-  <div class="video-cover" id="videoArea">
+  <div class="video-cover">
     <div id="wrap"><div id="player"></div></div>
   </div>
 
-  <!-- CENTER TAP -->
-  <div class="center-tap" id="centerTap"></div>
+  <!-- INTERACTION SHIELD -->
+  <div class="shield">
+    <div class="block-area" id="blockTap"></div>
+    <div class="center-unlock" id="centerTap"></div>
+  </div>
 
   <!-- CONTROLS -->
   <div class="controls hide" id="controls">
@@ -188,14 +205,12 @@ button{
         <div class="fill" id="fill"></div>
         <div class="dot" id="dot"></div>
       </div>
-
       <button class="fs-btn" onclick="toggleFull()">
         <svg viewBox="0 0 24 24">
           <path d="M7 3H3v4h2V5h2V3zm12 0h-4v2h2v2h2V3zM5 15H3v4h4v-2H5v-2zm16 0h-2v2h-2v2h4v-4z"/>
         </svg>
       </button>
     </div>
-
     <div class="time" id="time">0:00 / 0:00</div>
   </div>
 
@@ -207,31 +222,28 @@ let player, dragging=false, looped=false;
 let hideTimer=null;
 
 const controls=document.getElementById("controls");
-const videoArea=document.getElementById("videoArea");
-const centerTap=document.getElementById("centerTap");
 
-/* SHOW / HIDE CONTROLS */
+/* SHOW CONTROLS */
 function showControls(){
   controls.classList.remove("hide");
   clearTimeout(hideTimer);
   hideTimer=setTimeout(()=>controls.classList.add("hide"),1000);
 }
 
-/* TAP OUTSIDE CENTER = SHOW CONTROLS ONLY */
-videoArea.addEventListener("click",()=>{
+/* BLOCK AREA = ONLY SHOW CONTROLS */
+document.getElementById("blockTap").addEventListener("pointerdown",e=>{
+  e.preventDefault();
+  e.stopPropagation();
   showControls();
 });
 
-/* TAP CENTER = PLAY / PAUSE */
-centerTap.addEventListener("click",e=>{
+/* CENTER UNLOCK = PLAY / PAUSE */
+document.getElementById("centerTap").addEventListener("pointerdown",e=>{
+  e.preventDefault();
   e.stopPropagation();
   if(!player) return;
   let s=player.getPlayerState();
-  if(s===YT.PlayerState.PLAYING){
-    player.pauseVideo();
-  }else{
-    player.playVideo();
-  }
+  s===YT.PlayerState.PLAYING ? player.pauseVideo() : player.playVideo();
   showControls();
 });
 
@@ -267,7 +279,6 @@ function startTracker(){
     fill.style.width=p+"%";
     dot.style.left=p+"%";
     time.textContent=format(c)+" / "+format(d);
-
     if(d-c<=3 && !looped){
       looped=true;
       player.seekTo(0,true);
@@ -297,7 +308,7 @@ window.addEventListener("pointerup",()=>{
   showControls();
 });
 
-/* UTILS */
+/* UTIL */
 function format(t){
   t=Math.floor(t);
   return Math.floor(t/60)+":"+(t%60<10?"0":"")+t%60;
@@ -311,4 +322,4 @@ function toggleFull(){
 </script>
 
 </body>
-</html>
+        </html>
